@@ -1,11 +1,11 @@
 import random
-from time import time, localtime
-import cityinfo
+from time import localtime
 from requests import get, post
 from datetime import datetime, date
 import sys
 import os
-import http.client, urllib, json
+import json
+import http.client, urllib
 
 with open("config.txt", encoding="utf-8") as f:
     config = eval(f.read())
@@ -14,7 +14,7 @@ with open("config.txt", encoding="utf-8") as f:
 def get_color():
     # 获取随机颜色
     get_colors = lambda n: list(map(lambda i: "#" + "%06x" % random.randint(0, 0xFFFFFF), range(n)))
-    color_list = get_colors(100)
+    color_list = get_colors(90)
     return random.choice(color_list)
 
 
@@ -33,38 +33,6 @@ def get_access_token():
         sys.exit(1)
     # print(access_token)
     return access_token
-
-
-def get_weather(province, city):
-    # 城市id
-    try:
-        city_id = cityinfo.cityInfo[province][city]["AREAID"]
-    except KeyError:
-        print("推送消息失败，请检查省份或城市是否正确")
-        os.system("pause")
-        sys.exit(1)
-    # city_id = 101280101
-    # 毫秒级时间戳
-    t = (int(round(time() * 1000)))
-    headers = {
-        "Referer": "http://www.weather.com.cn/weather1d/{}.shtml".format(city_id),
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
-                      'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36'
-    }
-    url = "http://d1.weather.com.cn/dingzhi/{}.html?_={}".format(city_id, t)
-    response = get(url, headers=headers)
-    response.encoding = "utf-8"
-    response_data = response.text.split(";")[0].split("=")[-1]
-    response_json = eval(response_data)
-    # print(response_json)
-    weatherinfo = response_json["weatherinfo"]
-    # 天气
-    weather = weatherinfo["weather"]
-    # 最高气温
-    temp = weatherinfo["temp"]
-    # 最低气温
-    tempn = weatherinfo["tempn"]
-    return weather, temp, tempn
 
 
 def get_birthday(birthday, year, today):
@@ -99,18 +67,19 @@ def get_ciba():
 
 
 conn = http.client.HTTPSConnection('api.tianapi.com')  # 接口域名
-params = urllib.parse.urlencode({'key': 'b8843645156ff16cf819a0849f46a656'})
-res = conn.getresponse()
+
 headers = {'Content-type': 'application/x-www-form-urlencoded'}
+params = urllib.parse.urlencode({'key': 'b8843645156ff16cf819a0849f46a656'})
 
 
 # 获取节假日
 def get_holiday():
+    msg = None
     conn.request('POST', '/jiejiari/index', params, headers)
+    res = conn.getresponse()
     data = res.read()
-    print(data.decode('utf-8'))
     data2 = json.loads(data)
-    if data2['newslist'][0]['cnweekday'] == "星期五":
+    if data2['newslist'][0]['cnweekday'] == "星期二":
         msg = "工作辛苦了，明天就要休息啦~"
     elif data2['newslist'][0]['cnweekday'] == "星期日":
         msg = "明天就要工作了，呜呜呜~"
@@ -118,21 +87,45 @@ def get_holiday():
 
 
 def get_tq():
+    tip = None
+    params = urllib.parse.urlencode({'key': 'b8843645156ff16cf819a0849f46a656', 'city': '松江区'})
     conn.request('POST', '/tianqi/index', params, headers)
-    data = res.read()
-    print(data.decode('utf-8'))
-    # data2 = json.loads(data)
+    res = conn.getresponse()
+    data = json.loads(res.read())
+    area = data["newslist"][0]["area"]
+    today_date = data["newslist"][0]["date"]
+    week = data["newslist"][0]["week"]
+    weather = data["newslist"][0]["weather"]
+
+    # 当前温度
+    real = data["newslist"][0]["real"]
+    # 最高温度
+    lowest = data["newslist"][0]["lowest"]
+    # 最低温度
+    highest = data["newslist"][0]["highest"]
+    # 风向
+    wind = data["newslist"][0]["wind"]
+    # 提示
+    tips = data["newslist"][0]["tips"]
+
+    if "雨" in weather:
+        tip = "今天有雨，出门记得带伞嗷~~"
+    elif "晴" in weather:
+        tip = "今天天气不错，要元气满满嗷~~"
+    elif 38 <= lowest:
+        tip = "今天天气很热，出门注意防晒嗷~~"
+
+    return area, today_date, week, weather, real, lowest, highest, wind, tips, tip
 
 
-
-def send_message(to_user, access_token, city_name, weather, max_temperature, min_temperature, note_ch, note_en, msg):
+def send_message(to_user, access_token, area, today_date, week, weather, real, lowest, highest, wind, tips, note_ch,
+                 note_en, msg, tip):
     url = "https://api.weixin.qq.com/cgi-bin/message/template/send?access_token={}".format(access_token)
-    week_list = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"]
+
     year = localtime().tm_year
     month = localtime().tm_mon
     day = localtime().tm_mday
     today = datetime.date(datetime(year=year, month=month, day=day))
-    week = week_list[today.isoweekday() % 7]
     # 获取在一起的日子的日期格式
     love_year = int(config["love_date"].split("-")[0])
     love_month = int(config["love_date"].split("-")[1])
@@ -151,24 +144,40 @@ def send_message(to_user, access_token, city_name, weather, max_temperature, min
         "url": "http://weixin.qq.com/download",
         "topcolor": "#FF0000",
         "data": {
-            "date": {
-                "value": "{} {}".format(today, week),
-                "color": get_color()
+            "today_date": {
+                "value": today_date,
+                "color": '#2E2D2C'
             },
-            "city": {
-                "value": city_name,
-                "color": get_color()
+            "week": {
+                "value": week,
+                "color": '#E84022'
+            },
+            "area": {
+                "value": area,
+                "color": '#089308'
             },
             "weather": {
                 "value": weather,
                 "color": get_color()
             },
-            "min_temperature": {
-                "value": min_temperature,
+            "real": {
+                "value": real,
                 "color": get_color()
             },
-            "max_temperature": {
-                "value": max_temperature,
+            "lowest": {
+                "value": lowest,
+                "color": get_color()
+            },
+            "highest": {
+                "value": highest,
+                "color": get_color()
+            },
+            "wind": {
+                "value": wind,
+                "color": get_color()
+            },
+            "tips": {
+                "value": tips,
                 "color": get_color()
             },
             "love_day": {
@@ -182,10 +191,13 @@ def send_message(to_user, access_token, city_name, weather, max_temperature, min
             "note_ch": {
                 "value": note_ch,
                 "color": get_color()
-            }
-            ,
+            },
             "msg": {
                 "value": msg,
+                "color": get_color()
+            },
+            "tip": {
+                "value": tip,
                 "color": get_color()
             }
         }
@@ -220,12 +232,12 @@ if __name__ == "__main__":
     # 接收的用户
     users = config["user"]
     # 传入省份和市获取天气信息
-    province, city = config["province"], config["city"]
-    weather, max_temperature, min_temperature = get_weather(province, city)
+    area, today_date, week, weather, real, lowest, highest, wind, tips, tip = get_tq()
     # 获取词霸每日金句
     note_ch, note_en = get_ciba()
     msg = get_holiday()
     # 公众号推送消息
     for user in users:
-        send_message(user, accessToken, city, weather, max_temperature, min_temperature, note_ch, note_en, msg)
-    os.system("pause")
+        send_message(user, accessToken, area, today_date, week, weather, real, lowest, highest, wind, tips, note_ch,
+                     note_en, msg, tip)
+
