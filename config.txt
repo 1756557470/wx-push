@@ -21,5 +21,9 @@
 # 生日3
 "birthday3": "1997-01-03",
 # 在一起的日子，格式同上
-"love_date": "2022-01-01"
+"love_date": "2022-01-01",
+
+# 企业id
+"corpid": "ww528489036dbffd9a",
+"corpsecret" : "9V_ofYLK9Gc4CdwVhvG0tsV-i2M5Zgx82TXlIvnw5-U"
 }
