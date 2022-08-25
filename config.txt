@@ -1,29 +1,18 @@
 {
-# 公众号配置
-# 公众号appId
-"app_id": "wxe4b13e2120ab2c72",
-# 公众号appSecret
-"app_secret": "299a44b9fe3fc5e90f8e2080da910d7a",
-# 模板消息id
-"template_id": "AbLmCgND2GUJUTKeYLRvxB9lVfl3JpV-va4y6LIf3sA",
-# 接收公众号消息的微信号，如果有多个，需要在[]里用英文逗号间隔，例如["wx1", "wx2"]
-"user": ["ohI1N5lxybSv-ELVrQmFvXZO5H3U"],
-
 # 信息配置
-# 所在省份
-"province": "广东",
+# 企业id
+"corpid": "ww528489036dbffd9a",
+"corpsecret" : "9V_ofYLK9Gc4CdwVhvG0tsV-i2M5Zgx82TXlIvnw5-U",
 # 所在城市
-"city": "广州",
+"provinces":"上海",
+"city": "松江区",
 # 生日1,需要确保这里的birthday1与模板的一致，如果模板为birthday，这里也需要改成birthday,否则生日不会显示
-"birthday": "1997-01-01",
-# 生日2
-"birthday2": "1997-01-02",
-# 生日3
-"birthday3": "1997-01-03",
+"birthday": "1999-10-06",
 # 在一起的日子，格式同上
 "love_date": "2022-01-01",
 
-# 企业id
-"corpid": "ww528489036dbffd9a",
-"corpsecret" : "9V_ofYLK9Gc4CdwVhvG0tsV-i2M5Zgx82TXlIvnw5-U"
+# 生日2
+"birthday2": "1997-01-02",
+# 生日3
+"birthday3": "1997-01-03"
 }
